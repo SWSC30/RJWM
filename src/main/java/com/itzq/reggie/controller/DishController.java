@@ -20,6 +20,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -53,6 +54,10 @@ public class DishController {
         log.info(dishDto.toString());
 
         dishService.saveWithFlavor(dishDto);
+
+        //清理缓存
+        String key ="dish_"+dishDto.getCategoryId() + "_1";
+        redisTemplate.delete(key);
 
         return R.success("新增菜品成功");
     }
@@ -120,6 +125,14 @@ public class DishController {
 
         dishService.updateWithFlavor(dishDto);
 
+        //清理所有菜品
+//        Set keys = redisTemplate.keys("dish_*");
+//        redisTemplate.delete(keys);
+//
+        //清理某个分类下面的的菜品缓存数据
+        String key ="dish_"+dishDto.getCategoryId() + "_1";
+        redisTemplate.delete(key);
+
         return R.success("新增菜品成功");
     }
 
@@ -147,7 +160,8 @@ public class DishController {
     public R<List<DishDto>> list(Dish dish){
         List<DishDto> dishDtoList = null;
 
-        String key = "dish_" + dish.getCategoryId() + "_" + dish.getStatus();//dish_
+        //动态构造key
+        String key = "dish_" + dish.getCategoryId() + "_" + dish.getStatus();
 
         //从redis中获取缓存数据
         dishDtoList =(List<DishDto>) redisTemplate.opsForValue().get(key);
